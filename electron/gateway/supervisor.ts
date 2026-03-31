@@ -125,13 +125,18 @@ export async function unloadLaunchctlGatewayService(): Promise<void> {
   }
 }
 
-export async function waitForPortFree(port: number, timeoutMs = 30000): Promise<void> {
+export async function waitForPortFree(port: number, timeoutMs = 30000, signal?: AbortSignal): Promise<void> {
   const net = await import('net');
   const start = Date.now();
   const pollInterval = 500;
   let logged = false;
 
   while (Date.now() - start < timeoutMs) {
+    if (signal?.aborted) {
+      logger.debug(`waitForPortFree: aborted while waiting for port ${port}`);
+      return;
+    }
+
     const available = await new Promise<boolean>((resolve) => {
       const server = net.createServer();
       server.once('error', () => resolve(false));

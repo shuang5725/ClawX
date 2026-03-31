@@ -18,7 +18,7 @@ type StartupHooks = {
   findExistingGateway: (port: number, ownedPid?: number) => Promise<ExistingGatewayInfo | null>;
   connect: (port: number, externalToken?: string) => Promise<void>;
   onConnectedToExistingGateway: () => void;
-  waitForPortFree: (port: number) => Promise<void>;
+  waitForPortFree: (port: number, signal?: AbortSignal) => Promise<void>;
   startProcess: () => Promise<void>;
   waitForReady: (port: number) => Promise<void>;
   onConnectedToManagedGateway: () => void;
@@ -107,9 +107,24 @@ export async function runGatewayStartupSequence(hooks: StartupHooks): Promise<vo
           });
         }
         hooks.assertLifecycle('start/retry-pre-port-wait');
-        // Wait for port to become free before retrying (handles lingering processes)
+        // Wait for port to become free before retrying (handles lingering processes).
+        // Use a short-polling AbortController so that a superseding stop()/restart()
+        // can cancel the wait promptly instead of blocking for the full 30s timeout.
         if (hooks.shouldWaitForPortFree) {
-          await hooks.waitForPortFree(hooks.port);
+          const abortController = new AbortController();
+          // Poll lifecycle every 500ms and abort the port-wait if superseded
+          const lifecyclePollInterval = setInterval(() => {
+            try {
+              hooks.assertLifecycle('start/retry-port-wait-poll');
+            } catch {
+              abortController.abort();
+            }
+          }, 500);
+          try {
+            await hooks.waitForPortFree(hooks.port, abortController.signal);
+          } finally {
+            clearInterval(lifecyclePollInterval);
+          }
         }
         hooks.assertLifecycle('start/retry-post-port-wait');
         continue;

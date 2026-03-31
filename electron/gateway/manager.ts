@@ -254,8 +254,8 @@ export class GatewayManager extends EventEmitter {
 
           this.startHealthCheck();
         },
-        waitForPortFree: async (port) => {
-          await waitForPortFree(port);
+        waitForPortFree: async (port, signal) => {
+          await waitForPortFree(port, 30000, signal);
         },
         startProcess: async () => {
           await this.startProcess();
