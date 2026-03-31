@@ -34,11 +34,12 @@ export async function terminateOwnedGatewayProcess(child: Electron.UtilityProces
 
     // Register a single exit listener before any kill attempt to avoid
     // the race where exit fires between two separate `once('exit')` calls.
-    child.once('exit', () => {
+    const exitListener = () => {
       exited = true;
       clearTimeout(timeout);
       resolve();
-    });
+    };
+    child.once('exit', exitListener);
 
     const pid = child.pid;
     logger.info(`Sending kill to Gateway process (pid=${pid ?? 'unknown'})`);
@@ -72,6 +73,8 @@ export async function terminateOwnedGatewayProcess(child: Electron.UtilityProces
           }
         }
       }
+      // Clean up the exit listener on timeout to prevent listener leaks
+      child.off('exit', exitListener);
       resolve();
     }, 5000);
   });
