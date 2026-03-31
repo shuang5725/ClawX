@@ -281,16 +281,21 @@ export class GatewayManager extends EventEmitter {
           if (this.process && this.ownsProcess) {
             logger.info('Terminating owned Gateway process before retry...');
             const proc = this.process;
+            const pid = proc.pid;
             await terminateOwnedGatewayProcess(proc).catch(() => {});
             // Only clear the handle if the process has actually exited.
             // terminateOwnedGatewayProcess may resolve via its timeout path
             // while the child is still alive; in that case keep the reference
             // so subsequent retries and stop() can still target it.
-            try {
-              process.kill(proc.pid ?? 0, 0);
-              // Still alive — keep this.process so later cleanup can reach it
-            } catch {
-              // Process is gone — safe to clear the handle
+            if (pid != null) {
+              try {
+                process.kill(pid, 0);
+                // Still alive — keep this.process so later cleanup can reach it
+              } catch {
+                // Process is gone — safe to clear the handle
+                this.process = null;
+              }
+            } else {
               this.process = null;
             }
           }
