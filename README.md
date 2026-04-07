@@ -125,6 +125,7 @@ Environment variables for bundled search skills:
 ### 🔐 Secure Provider Integration
 Connect to multiple AI providers (OpenAI, Anthropic, and more) with credentials stored securely in your system's native keychain. OpenAI supports both API key and browser OAuth (Codex subscription) sign-in.
 For **Custom** providers used with OpenAI-compatible gateways, you can set a custom `User-Agent` in **Settings → AI Providers → Edit Provider** for compatibility-sensitive endpoints.
+When a compatible gateway rejects `/models` for non-auth reasons, ClawX automatically falls back to a lightweight `/chat/completions` or `/responses` probe during API key validation.
 
 ### 🌙 Adaptive Theming
 Light mode, dark mode, or system-synchronized themes. ClawX adapts to your preferences automatically.
@@ -322,6 +323,7 @@ Chain multiple skills together to create sophisticated automation pipelines. Pro
 │   ├── i18n/                # Localization resources
 │   └── types/               # TypeScript type definitions
 ├── tests/
+│   ├── e2e/                 # Playwright Electron end-to-end smoke tests
 │   └── unit/                # Vitest unit/integration-like tests
 ├── resources/                # Static assets (icons/images)
 └── scripts/                  # Build and utility scripts
@@ -353,6 +355,8 @@ pnpm package:mac          # Package for macOS
 pnpm package:win          # Package for Windows
 pnpm package:linux        # Package for Linux
 ```
+
+On headless Linux, run Electron tests under a display server such as `xvfb-run -a pnpm run test:e2e`.
 
 ### Communication Regression Checks
 
